@@ -90,7 +90,7 @@ const int ON_VELOCITY = 99; // note-one velocity sent from buttons (should be 65
 
 // define the pins you want to use and the CC ID numbers on which to send them..
 const int ANALOG_PINS[A_PINS] = {A0,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12,A13,A14,A15,A16,A17};
-const int CCID[A_PINS] = {24,25,26,27,28,31,64,102,103,104,105,106,107,108,109,110,120,121};
+const int CCID[A_PINS] = {1,2,3,4,5,6,7,9,10,11,12,13,14,15,16,17,18};
 
 // define the pins and notes for digital events
 const int DIGITAL_PINS[D_PINS] = {24,25,26,27,28,29,30,38,10};
@@ -186,20 +186,22 @@ void setup() {
 }
 
 elapsedMillis msec = 0;
-elapsedMillis msec0 = 0;
 //************LOOP**************
 void loop() {
-  getEncoderData();
-  selectSample();
-  if (msec >= 40) {
+  if (msec >= 20) {
     msec = 0;
     midiControllerSliders();
   }
-  if (msec0 >= 20) {
-    msec0 = 0;
+  if (msec <= 20 && msec >= 10) {
     midiControllerPotBut();
   }
-  sampleplayer();
+  if (msec <= 10 && msec >= 5) {
+    sampleplayer();
+  }
+  if (msec <= 5) {
+    getEncoderData();
+    selectSample();
+  }
   while (usbMIDI.read()) {
      // controllers must call .read() to keep the queue clear even if they are not responding to MIDI
   }
@@ -223,20 +225,20 @@ void printLCDmessCHAR(const char* mess, int col, int row){
 
 //************MIDI CONTROLLER SECTION**************
 void midiControllerSliders(){
-  for (int i=0;i<A_PINS-8;i++){
+  for (int i=0;i<A_PINS - 8;i++){
     // update the ResponsiveAnalogRead object every loop
     int n = analogRead(ANALOG_PINS[i]);
-    if(n > 115){
+    if(n > 115 && i != 3 && i != 6){
       n = 127;
     }
-    if(n < 10){
+    if(n < 10 && i != 3 && i != 6){
       n = 0;
     }
-    if (n < (previous[i] - 3) || n > (previous[i] + 3)) {
-      previous[i] = n;
-      printLCDmessCHAR("MIDI CC", 0, 0);
-      printLCDmessINT(n, 0, 1);
+    if (n < (previous[i] - 4) || n > (previous[i] + 4)) {
       usbMIDI.sendControlChange(CCID[i], n, channel);
+      previous[i] = n;
+      printLCDmessCHAR("CC", 0, 1);
+      printLCDmessINT(n, 3, 1);
     }
   }
 }
@@ -246,9 +248,9 @@ void midiControllerPotBut(){
     // update the ResponsiveAnalogRead object every loop
     int n = analogRead(ANALOG_PINS[i]);
     if (n < (previous[i] - 1) || n > (previous[i] + 1)) {
-      printLCDmessCHAR("MIDI CC", 0, 0);
-      printLCDmessINT(n, 0, 1);
       usbMIDI.sendControlChange(CCID[i], n, channel);
+      printLCDmessCHAR("CC", 0, 1);
+      printLCDmessINT(n, 3, 1);
       previous[i] = n;
     }
   }
@@ -311,13 +313,13 @@ void getEncoderData(){
   newRightF = knobRightF.read()/2;
   newRightS = knobRightS.read()/2;
   if (newRightF != positionRightF) {
-    if (newRightF < 11 && newRightF > 0){
+    if (newRightF < 11 && newRightF >= 0){
       encsample = newRightF;
       printLCDmessCHAR(SAMPLEMAP[encsample], 0, 1);
     }
     positionRightF = newRightF;
   }if (newRightS != positionRightS){
-    if (newRightS < 7 && newRightS > 0){
+    if (newRightS < 7 && newRightS >= 0){
       enceffect = newRightS;
       printLCDmessCHAR(EFFECTS[enceffect], 0, 1);
     }
