@@ -1,12 +1,12 @@
 // CONTROLLER
-//  - slide1 = A0 CC         - pot1 = VOLUME                       - //enbut2 = 38 SELECT               - bp1 = 37 TRI           - input9 = 27
-//  - slide2 = A1 CC         - pot2 = CONTRASTE                    - int1pos1 = A15 CCUP              - //bp2 = 36 TRI           - input10 = 28
-//  - slide3 = A2 CC         - pot3 = A10 CC                       - int1pos2 =  // CCNO              - input1 = 29           
-//  - slide4 = A3 CC         - pot4 = A11 CC                       - int1pos3 =  // CCDOWN .          - input2 = 30
-//  - slide5 = A4 CC         - pot5 = A12 CC                       - int2pos1 = A16 CCUP              - input3 = AUDIOOUT
-//  - slide6 = A5 CC         - pot6 = A13 CC                       - int2pos2 =  // CCNOT             - input4 = AUDIOOUT
-//  - slide7 = A6 CC         - pot7 = A14 CC                       - int2pos3 =  // CCDOWN            - input5 =
-//  - slide8 = A7 CC         - enc1 = 6,7 SELECT                   - //int3pos1 = A17 CCUP              - input6 = 24
+//  - slide1 = A0 CC         - pot1 = VOLUME                       - enbut2 = 10 SELECT               - bp1 = RESET             - input9 = 27
+//  - slide2 = A1 CC         - pot2 = CONTRASTE                    - int1pos1 = A15 CCUP              - bp2 = PROGRAM           - input10 = 28
+//  - slide3 = A2 CC         - pot3 = A10 CC                       - int1pos2 =  // CCNO              - input1 = AUDIOOUT        
+//  - slide4 = A3 CC         - pot4 = A11 CC                       - int1pos3 =  // CCDOWN .          - input2 = AUDIOOUT
+//  - slide5 = A4 CC         - pot5 = A12 CC                       - int2pos1 = A16 CCUP              - input3 = 
+//  - slide6 = A5 CC         - pot6 = A13 CC                       - int2pos2 =  // CCNOT             - input4 = 29
+//  - slide7 = A6 CC         - pot7 = A14 CC                       - int2pos3 =  // CCDOWN            - input5 = 30
+//  - slide8 = A7 CC         - enc1 = 6,7 SELECT                   - int3pos1 = A17 CCUP              - input6 = 24
 //  - slide9 = A8 CC         - enc2 = 8,9 SELECT                   - int3pos2 =  // CCNOT             - input7 = 25
 //  - slide10 = A9 CC        - enbut1 = 38 SELECT                  - int3pos3 =  // CCDOWN            - input8 = 26
 
@@ -84,16 +84,16 @@ AudioConnection c12(mix3, 0, dac, 1);
 // ******CONSTANT VALUES********
 // customize code behaviour here!
 const int channel = 1; // MIDI channel
-const int A_PINS = 16; // number of Analog PINS
-const int D_PINS = 10; // number of Digital PINS
+const int A_PINS = 18; // number of Analog PINS
+const int D_PINS = 9; // number of Digital PINS
 const int ON_VELOCITY = 99; // note-one velocity sent from buttons (should be 65 to  127)
 
 // define the pins you want to use and the CC ID numbers on which to send them..
-const int ANALOG_PINS[A_PINS] = {A0,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12,A13,A14,A15};//,A16};
-const int CCID[A_PINS] = {24,25,26,27,28,31,64,102,103,104,105,106,107,108,109,110};//,120};
+const int ANALOG_PINS[A_PINS] = {A0,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12,A13,A14,A15,A16,A17};
+const int CCID[A_PINS] = {24,25,26,27,28,31,64,102,103,104,105,106,107,108,109,110,120,121};
 
 // define the pins and notes for digital events
-const int DIGITAL_PINS[D_PINS] = {24,25,26,27,28,29,30,36,37,38};
+const int DIGITAL_PINS[D_PINS] = {24,25,26,27,28,29,30,38,10};
 const int BOUNCE_TIME = 5; // 5 ms is usually sufficient
 const boolean toggled = true;
 
@@ -137,8 +137,7 @@ Bounce digital[] =   {
   Bounce(DIGITAL_PINS[5], BOUNCE_TIME),
   Bounce(DIGITAL_PINS[6], BOUNCE_TIME),
   Bounce(DIGITAL_PINS[7], BOUNCE_TIME),
-  Bounce(DIGITAL_PINS[8], BOUNCE_TIME),
-  Bounce(DIGITAL_PINS[9], BOUNCE_TIME),
+  Bounce(DIGITAL_PINS[8], BOUNCE_TIME)
 };
 
 
@@ -182,16 +181,23 @@ void setup() {
   mix2.gain(3, 1);
 
   lcd.print("**** SuperSynth UP !!! ****");
+
+  delay(3000);
 }
 
 elapsedMillis msec = 0;
+elapsedMillis msec0 = 0;
 //************LOOP**************
 void loop() {
   getEncoderData();
   selectSample();
-  if (msec >= 20) {
+  if (msec >= 40) {
     msec = 0;
-    midiController();
+    midiControllerSliders();
+  }
+  if (msec0 >= 20) {
+    msec0 = 0;
+    midiControllerPotBut();
   }
   sampleplayer();
   while (usbMIDI.read()) {
@@ -216,8 +222,27 @@ void printLCDmessCHAR(const char* mess, int col, int row){
 }
 
 //************MIDI CONTROLLER SECTION**************
-void midiController(){
-  for (int i=0;i<A_PINS;i++){
+void midiControllerSliders(){
+  for (int i=0;i<A_PINS-8;i++){
+    // update the ResponsiveAnalogRead object every loop
+    int n = analogRead(ANALOG_PINS[i]);
+    if(n > 115){
+      n = 127;
+    }
+    if(n < 10){
+      n = 0;
+    }
+    if (n < (previous[i] - 3) || n > (previous[i] + 3)) {
+      previous[i] = n;
+      printLCDmessCHAR("MIDI CC", 0, 0);
+      printLCDmessINT(n, 0, 1);
+      usbMIDI.sendControlChange(CCID[i], n, channel);
+    }
+  }
+}
+
+void midiControllerPotBut(){
+  for (int i=10;i<A_PINS;i++){
     // update the ResponsiveAnalogRead object every loop
     int n = analogRead(ANALOG_PINS[i]);
     if (n < (previous[i] - 1) || n > (previous[i] + 1)) {
@@ -237,12 +262,13 @@ void sampleeffectplayer(){
 
 //***************** SAMPLE PLAYER SECTION ***************
 void sampleplayer(){
-  for (int i=0;i<D_PINS-1;i++){
+  for (int i=0;i<D_PINS-2;i++){
     digital[i].update();
     if (digital[i].fallingEdge()) {
       switch (i) {
         case 0:
-          sampleeffectplayer();
+          sound2.play(SAMPLENAMES[i]);
+          printLCDmessCHAR(SAMPLEMAP[i], 0, 0);
           break;
 
         case 1:
@@ -251,8 +277,7 @@ void sampleplayer(){
           break;
 
         case 2:
-          sound2.play(SAMPLENAMES[i]);
-          printLCDmessCHAR(SAMPLEMAP[i], 0, 0);
+          sampleeffectplayer();
           break;
 
         case 3:
@@ -275,13 +300,6 @@ void sampleplayer(){
           printLCDmessCHAR(SAMPLEMAP[i], 0, 0);
           break;
 
-        case 7:
-          sound7.play(SAMPLENAMES[i]);
-          printLCDmessCHAR(SAMPLEMAP[i], 0, 0);
-          break;
-
-        default:
-          printLCDmessCHAR(SAMPLEMAP[i], 0, 0);
       }
     }
   }
@@ -308,9 +326,14 @@ void getEncoderData(){
 }
 //************** SELECT PROGRAM SECTION *****************
 void selectSample(){
-  digital[9].update();
-  if (digital[9].fallingEdge()) {
+  digital[7].update();
+  digital[8].update();
+  if (digital[7].fallingEdge()) {
       sample = encsample;
-      printLCDmessCHAR(SAMPLEMAP[sample], 0, 1);
+      printLCDmessCHAR("OK SAMPLE", 0, 1); //SAMPLEMAP[sample]
+  }
+  if (digital[8].fallingEdge()) {
+      effect = enceffect;
+      printLCDmessCHAR("OK EFFECT", 0, 1); //EFFECTS[effect]
   }
 }
