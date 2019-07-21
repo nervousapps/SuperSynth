@@ -56,13 +56,13 @@ AudioMixer4        mix3;    // one 4-channel mixer
 AudioOutputAnalogStereo  dac;     // play to both I2S audio board and on-chip DAC
 
 //Effects
-AudioEffectReverb        reverb1;
-AudioEffectChorus        chorus1;
-AudioEffectFlange        flange1;
-AudioEffectFreeverb      freeverb1;
-AudioEffectGranular      granular1;
-AudioEffectEnvelope      envelope1;
-AudioEffectBitcrusher    bitcrusher1;
+//AudioEffectReverb        reverb1;
+//AudioEffectChorus        chorus1;
+//AudioEffectFlange        flange1;
+//AudioEffectFreeverb      freeverb1;
+//AudioEffectGranular      granular1;
+//AudioEffectEnvelope      envelope1;
+//AudioEffectBitcrusher    bitcrusher1;
 char EFFECTS[7][40] = {"Reverb","Chorus","Flanger","Freeverb","Granular","Envelope","Bitcrusher"};
 
 // Create Audio connections between the components
@@ -172,10 +172,14 @@ void setup() {
   // set up the LCD's number of rows and columns:
   lcd.begin(20, 2);
 
-  mix1.gain(0, 0.8);
-  mix1.gain(1, 0.8);
-  mix1.gain(2, 0.8);
-  mix1.gain(3, 0.8);
+  mix1.gain(0, 1);
+  mix1.gain(1, 1);
+  mix1.gain(2, 1);
+  mix1.gain(3, 1);
+  mix2.gain(0, 1);
+  mix2.gain(1, 1);
+  mix2.gain(2, 1);
+  mix2.gain(3, 1);
 
   lcd.print("**** SuperSynth UP !!! ****");
 }
@@ -184,7 +188,7 @@ elapsedMillis msec = 0;
 //************LOOP**************
 void loop() {
   getEncoderData();
-  selectProgram();
+  selectSample();
   if (msec >= 20) {
     msec = 0;
     midiController();
@@ -216,7 +220,8 @@ void midiController(){
   for (int i=0;i<A_PINS;i++){
     // update the ResponsiveAnalogRead object every loop
     int n = analogRead(ANALOG_PINS[i]);
-    if (n < (previous[i]-2) || n > (previous[i]+2)) {
+    if (n < (previous[i] - 1) || n > (previous[i] + 1)) {
+      printLCDmessCHAR("MIDI CC", 0, 0);
       printLCDmessINT(n, 0, 1);
       usbMIDI.sendControlChange(CCID[i], n, channel);
       previous[i] = n;
@@ -226,56 +231,8 @@ void midiController(){
 
 //***************** SAMPLE EFFECT PLAYER ****************
 void sampleeffectplayer(){
-  switch (enceffects){
-    case 0:
-    AudioConnection c1(sound0, 0, reverb1, 0);
-    AudioConnection c1(reverb1, 0, mix1, 0);
-    sound0.play(SAMPLENAMES[sample]);
-    printLCDmessCHAR(SAMPLEMAP[sample], 0, 0);
-    break;
-
-    case 1:
-    AudioConnection c1(sound0, 0, chorus1, 0);
-    AudioConnection c1(reverb1, 0, mix1, 0);
-    sound0.play(SAMPLENAMES[sample]);
-    printLCDmessCHAR(SAMPLEMAP[sample], 0, 0);
-    break;
-
-    case 2:
-    AudioConnection c1(sound0, 0, flange1, 0);
-    AudioConnection c1(reverb1, 0, mix1, 0);
-    sound0.play(SAMPLENAMES[sample]);
-    printLCDmessCHAR(SAMPLEMAP[sample], 0, 0);
-    break;
-
-    case 3:
-    AudioConnection c1(sound0, 0, freeverb1, 0);
-    AudioConnection c1(reverb1, 0, mix1, 0);
-    sound0.play(SAMPLENAMES[sample]);
-    printLCDmessCHAR(SAMPLEMAP[sample], 0, 0);
-    break;
-
-    case 4:
-    AudioConnection c1(sound0, 0, granular1, 0);
-    AudioConnection c1(reverb1, 0, mix1, 0);
-    sound0.play(SAMPLENAMES[sample]);
-    printLCDmessCHAR(SAMPLEMAP[sample], 0, 0);
-    break;
-
-    case 5:
-    AudioConnection c1(sound0, 0, envelope1, 0);
-    AudioConnection c1(reverb1, 0, mix1, 0);
-    sound0.play(SAMPLENAMES[sample]);
-    printLCDmessCHAR(SAMPLEMAP[sample], 0, 0);
-    break;
-    
-    case 6:
-    AudioConnection c1(sound0, 0, bitcrusher1, 0);
-    AudioConnection c1(reverb1, 0, mix1, 0);
-    sound0.play(SAMPLENAMES[sample]);
-    printLCDmessCHAR(SAMPLEMAP[sample], 0, 0);
-    break;
-  }
+  sound0.play(SAMPLENAMES[sample]);
+  printLCDmessCHAR(SAMPLEMAP[sample], 0, 0);
 }
 
 //***************** SAMPLE PLAYER SECTION ***************
@@ -285,7 +242,7 @@ void sampleplayer(){
     if (digital[i].fallingEdge()) {
       switch (i) {
         case 0:
-          sampleeffectplayer()
+          sampleeffectplayer();
           break;
 
         case 1:
@@ -336,13 +293,13 @@ void getEncoderData(){
   newRightF = knobRightF.read()/2;
   newRightS = knobRightS.read()/2;
   if (newRightF != positionRightF) {
-    if (newRightF < 11){
+    if (newRightF < 11 && newRightF > 0){
       encsample = newRightF;
-      printLCDmessINT(SAMPLEMAP[encsample], 0, 1);
+      printLCDmessCHAR(SAMPLEMAP[encsample], 0, 1);
     }
     positionRightF = newRightF;
   }if (newRightS != positionRightS){
-    if (newRightS < 7){
+    if (newRightS < 7 && newRightS > 0){
       enceffect = newRightS;
       printLCDmessCHAR(EFFECTS[enceffect], 0, 1);
     }
