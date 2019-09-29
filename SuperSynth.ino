@@ -414,8 +414,8 @@ void getEncoderData(){
           newRightF = 0;
         }
         if(newRightF < 0){
-          knobRightF.write(NBTYPE - 1);
-          newRightF = NBTYPE - 1;
+          knobRightF.write(NBTYPE+2);
+          newRightF = NBTYPE+2;
         }
         enctype = newRightF;
         printLCDmessCHAR(SAMPLE_TYPE[enctype], 0, 1, true);
@@ -424,7 +424,7 @@ void getEncoderData(){
       case 1:
         for(int i = 0; i<NBX; i++){
           if(SAMPLE_X[type][i][0] == 0){
-            maxx = i - 1;
+            maxx = i;
             break;
           }
         }
@@ -448,7 +448,7 @@ void getEncoderData(){
       newRightS = 0;
     }
     if (newRightS < 0){
-      newRightS = NBSLOT-1;
+      newRightS = NBSLOT+6;
       knobRightS.write(newRightS);
     }
     if (newRightS < NBSLOT){
