@@ -1,9 +1,9 @@
 // CONTROLLER
 //  - slide1 = A0 CC         - pot1 = VOLUME                       - enbut2 = 10 SELECT               - bp1 = RESET             - input9 = 27
 //  - slide2 = A1 CC         - pot2 = CONTRASTE                    - int1pos1 = A15 CCUP              - bp2 = PROGRAM           - input10 = 28
-//  - slide3 = A2 CC         - pot3 = A10 CC                       - int1pos2 =  // CCNO              - input1 = AUDIOOUT        
+//  - slide3 = A2 CC         - pot3 = A10 CC                       - int1pos2 =  // CCNO              - input1 = AUDIOOUT
 //  - slide4 = A3 CC         - pot4 = A11 CC                       - int1pos3 =  // CCDOWN .          - input2 = AUDIOOUT
-//  - slide5 = A4 CC         - pot5 = A12 CC                       - int2pos1 = A16 CCUP              - input3 = 
+//  - slide5 = A4 CC         - pot5 = A12 CC                       - int2pos1 = A16 CCUP              - input3 =
 //  - slide6 = A5 CC         - pot6 = A13 CC                       - int2pos2 =  // CCNOT             - input4 = 29
 //  - slide7 = A6 CC         - pot7 = A14 CC                       - int2pos3 =  // CCDOWN            - input5 = 30
 //  - slide8 = A7 CC         - enc1 = 6,7 SELECT                   - int3pos1 = A17 CCUP              - input6 = 24
@@ -26,59 +26,39 @@
 #include <Audio.h>
 #include <Wire.h>
 
-// WAV files converted to code by wav2sketch
-#include "AudioSampleCowbell.h"
-#include "AudioSampleCrash.h"
-#include "AudioSampleRim.h"
-#include "AudioSampleSnare.h"
-#include "AudioSampleTom1.h"
-#include "AudioSampleTom2.h"
-#include "AudioSampleTom3.h"
-#include "AudioSampleRide_909.h"
+#include <SPI.h>
+#include <SD.h>
+#include <SerialFlash.h>
 
-const unsigned int* SAMPLENAMES[] = {AudioSampleCowbell,AudioSampleCrash,AudioSampleRim,AudioSampleSnare,AudioSampleTom1,AudioSampleTom2,AudioSampleTom3,AudioSampleRide_909};
-char SAMPLEMAP[11][40] = {"Cowbell","Crash","Rim","Snare","Tom1","Tom2","Tom3","Ride_909","8","9","10"};
 
-// Create the Audio components.  These should be created in the
-// order data flows, inputs/sources -> processing -> outputs
-//
-AudioPlayMemory    sound0;
-AudioPlayMemory    sound1;  // four memory players, so we can play
-AudioPlayMemory    sound2;  // four sounds simultaneously
-AudioPlayMemory    sound3;
-AudioPlayMemory    sound4;
-AudioPlayMemory    sound5;  // four memory players, so we can play
-AudioPlayMemory    sound6;  // four sounds simultaneously
-AudioPlayMemory    sound7;
-AudioMixer4        mix1;    // one 4-channel mixer
-AudioMixer4        mix2;    // one 4-channel mixer
-AudioMixer4        mix3;    // one 4-channel mixer
-AudioOutputAnalogStereo  dac;     // play to both I2S audio board and on-chip DAC
-
-//Effects
-//AudioEffectReverb        reverb1;
-//AudioEffectChorus        chorus1;
-//AudioEffectFlange        flange1;
-//AudioEffectFreeverb      freeverb1;
-//AudioEffectGranular      granular1;
-//AudioEffectEnvelope      envelope1;
-//AudioEffectBitcrusher    bitcrusher1;
-char EFFECTS[7][40] = {"Reverb","Chorus","Flanger","Freeverb","Granular","Envelope","Bitcrusher"};
+AudioPlaySdWav           playSdWav4;     //xy=185,396
+AudioPlaySdWav           playSdWav5;     //xy=199,472
+AudioPlaySdWav           playSdWav6;     //xy=207,519
+AudioPlaySdWav           playSdWav7;     //xy=219,562
+AudioPlaySdWav           playSdWav1;     //xy=228,200
+AudioPlaySdWav           playSdWav3;     //xy=233,333
+AudioPlaySdWav           playSdWav2;     //xy=248,267
+//AudioInputAnalog         adc1;           //xy=256,98
+AudioEffectReverb        reverb1;        //xy=411,100
+AudioMixer4              mix1;         //xy=505,293
+AudioMixer4              mix2;         //xy=512,420
+AudioMixer4              mix3;         //xy=694,351
+AudioOutputAnalogStereo  dacs1;          //xy=847,355
 
 // Create Audio connections between the components
-//
-AudioConnection c1(sound0, 0, mix1, 0);
-AudioConnection c2(sound1, 0, mix1, 1);
-AudioConnection c3(sound2, 0, mix1, 2);
-AudioConnection c4(sound3, 0, mix1, 3);
-AudioConnection c5(sound4, 0, mix2, 0);
-AudioConnection c6(sound5, 0, mix2, 1);
-AudioConnection c7(sound6, 0, mix2, 2);
-AudioConnection c8(sound7, 0, mix2, 3);
-AudioConnection c9(mix1, 0, mix3, 0);
-AudioConnection c10(mix2, 0, mix3, 1);
-AudioConnection c11(mix3, 0, dac, 0);
-AudioConnection c12(mix3, 0, dac, 1);
+AudioConnection          patchCord1(playSdWav4, 0, mix2, 0);
+AudioConnection          patchCord2(playSdWav5, 0, mix2, 1);
+AudioConnection          patchCord3(playSdWav6, 0, mix2, 2);
+AudioConnection          patchCord4(playSdWav7, 0, mix2, 3);
+AudioConnection          patchCord5(playSdWav1, 0, mix1, 1);
+AudioConnection          patchCord6(playSdWav3, 0, mix1, 3);
+AudioConnection          patchCord7(playSdWav2, 0, mix1, 2);
+//AudioConnection          patchCord8(adc1, reverb1);
+AudioConnection          patchCord9(reverb1, 0, mix1, 0);
+AudioConnection          patchCord10(mix1, 0, mix3, 0);
+AudioConnection          patchCord11(mix2, 0, mix3, 1);
+AudioConnection          patchCord12(mix3, 0, dacs1, 0);
+AudioConnection          patchCord13(mix3, 0, dacs1, 1);
 
 
 // ******CONSTANT VALUES********
@@ -93,15 +73,15 @@ const int ANALOG_PINS[A_PINS] = {A0,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12,A13,A
 const int CCID[A_PINS] = {1,2,3,4,5,6,7,9,10,11,12,13,14,15,16,17,18};
 
 // define the pins and notes for digital events
-const int DIGITAL_PINS[D_PINS] = {24,25,26,27,28,29,30,38,10};
+const int DIGITAL_PINS[D_PINS] = {25,26,24,29,30,27,28,37,10};
 const int BOUNCE_TIME = 5; // 5 ms is usually sufficient
 const boolean toggled = true;
 
 
 //******VARIABLES***********
 // a data array and a lagged copy to tell when MIDI changes are required
-int previous[A_PINS] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1,-1,-1,-1,-1};//,-1,-1};
-
+byte data[A_PINS];
+byte dataLag[A_PINS]; // when lag and new are not the same then update MIDI CC value
 
 //************INITIALIZE LIBRARY OBJECTS**************
 // not sure if there is a better way... some way run a setup loop on global array??
@@ -124,7 +104,9 @@ ResponsiveAnalogRead analog[]{
   {ANALOG_PINS[12],true},
   {ANALOG_PINS[13],true},
   {ANALOG_PINS[14],true},
-  {ANALOG_PINS[15],true}
+  {ANALOG_PINS[15],true},
+  {ANALOG_PINS[16],true},
+  {ANALOG_PINS[17],true}
 };
 
 // initialize the bounce objects
@@ -154,16 +136,39 @@ Encoder knobRightS(8, 9);
 long positionRightF = -999;
 long positionRightS = -999;
 
-int sample = 0;
-int encsample = 0;
-int effect = 0;
-int enceffect;
+const int NBTYPE = 4;
+const int NBX = 150;
+const int NBSLOT = 7;
+char SAMPLE_TYPE[NBTYPE][20] = {"ALL","909","707","LINN"};
+char SAMPLE_X[NBTYPE][NBX][40];
+int SLOTS[NBSLOT][2] = {{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0}};
+int type = 0;
+int enctype = 0;
+int x = 0;
+int encx = 0;
+int slot = 0;
+int encslot = 0;
+int state = 0;
+int cc = 0;
+
+elapsedMillis msec = 0;
+elapsedMillis msec1 = 0;
+elapsedMillis msec2 = 0;
+int turn = 0;
+
+// SD var
+File root;
+const int chipSelect = BUILTIN_SDCARD;
 
 //************SETUP**************
 void setup() {
-  analogReadResolution(7);
-  dac.analogReference(INTERNAL);
-  AudioMemory(24);
+  // Open serial communications and wait for port to open:
+  Serial.begin(9600);
+  analogReadResolution(9);
+  analogReadAveraging(4);
+  analogReference(EXTERNAL);
+  dacs1.analogReference(INTERNAL);
+  AudioMemory(8);
   // loop to configure input pins and internal pullup resisters for digital section
   for (int i=0;i<D_PINS;i++){
     pinMode(DIGITAL_PINS[i], INPUT_PULLUP);
@@ -180,30 +185,116 @@ void setup() {
   mix2.gain(2, 1);
   mix2.gain(3, 1);
 
-  lcd.print("**** SuperSynth UP !!! ****");
+  Serial.println("Initializing SD card...");
+
+  if (!SD.begin(chipSelect)) {
+    Serial.println("initialization failed!");
+    return;
+  }
+  Serial.println("initialization done.");
+
+  initSAMPLE_X();
+
+  root = SD.open("/");
+
+  listSDfiles(root, 0);
+
+  fillSAMPLE_X();
+
+  lcd.print("*SuperSynth UP !!!!*");
 
   delay(3000);
 }
 
-elapsedMillis msec = 0;
 //************LOOP**************
 void loop() {
-  if (msec >= 20) {
-    msec = 0;
-    midiControllerSliders();
-  }
-  if (msec <= 20 && msec >= 10) {
-    midiControllerPotBut();
-  }
-  if (msec <= 10 && msec >= 5) {
-    sampleplayer();
-  }
-  if (msec <= 5) {
-    getEncoderData();
-    selectSample();
+  switch(turn){
+    case 0:
+      if (msec >= 50) {
+        msec = 0;
+        midiControllerSliders();
+      }
+      turn = 1;
+      break;
+
+    case 1:
+      if (msec1 >= 50) {
+        msec1 = 0;
+        midiControllerPotBut();
+      }
+      turn = 2;
+      break;
+
+    case 2:
+      sampleplayer();
+      turn = 3;
+      break;
+
+    case 3:
+      getEncoderData();
+      turn = 4;
+      break;
+
+    case 4:
+      selectSample();
+      turn = 0;
+      break;
   }
   while (usbMIDI.read()) {
      // controllers must call .read() to keep the queue clear even if they are not responding to MIDI
+  }
+}
+
+
+//***************List SD files****************
+void listSDfiles(File dir, int numTabs){
+  int i = 0;
+  while(true) {
+     File entry =  dir.openNextFile();
+     if (! entry) {
+       // no more files
+       //Serial.println("**nomorefiles**");
+       break;
+     }
+     for (uint8_t i=0; i<numTabs; i++) {
+       Serial.print('\t');
+     }
+     Serial.println(entry.name());
+     if (entry.isDirectory()) {
+       Serial.println("/");
+       //printDirectory(entry, numTabs+1);
+     } else {
+       // files have sizes, directories do not
+       strcpy(SAMPLE_X[0][i], entry.name());
+     }
+     entry.close();
+     i++;
+   }
+}
+
+void initSAMPLE_X(){
+  for(int i = 0; i<NBTYPE; i++){
+    for(int j = 0; j<NBX; j++){
+      SAMPLE_X[i][j][0] = 0;
+    }
+  }
+}
+
+void fillSAMPLE_X(){
+  for(int i = 0; i<NBX; i++){
+    if(SAMPLE_X[0][i][0] == 0){
+      break;
+    }
+    for(int j = 0; j<NBTYPE; j++){
+      if(SAMPLE_X[0][i][0] == SAMPLE_TYPE[j][0]){
+        for(int k = 0; k<NBX; k++){
+          if(SAMPLE_X[j][k][0] == 0){
+            strcat(SAMPLE_X[j][k],SAMPLE_X[0][i]);
+            break;
+          }
+        }
+      }
+    }
   }
 }
 
@@ -216,8 +307,10 @@ void printLCDmessINT(int mess, int col, int row){
   lcd.print(mess);
 }
 
-void printLCDmessCHAR(const char* mess, int col, int row){
-  lcd.clear();
+void printLCDmessCHAR(const char* mess, int col, int row, bool clr){
+  if(clr){
+    lcd.clear();
+  }
   lcd.setCursor(col, row);
   // Print a message to the LCD.
   lcd.print(mess);
@@ -227,18 +320,25 @@ void printLCDmessCHAR(const char* mess, int col, int row){
 void midiControllerSliders(){
   for (int i=0;i<A_PINS - 8;i++){
     // update the ResponsiveAnalogRead object every loop
-    int n = analogRead(ANALOG_PINS[i]);
-    if(n > 115 && i != 3 && i != 6){
-      n = 127;
-    }
-    if(n < 10 && i != 3 && i != 6){
-      n = 0;
-    }
-    if (n < (previous[i] - 4) || n > (previous[i] + 4)) {
-      usbMIDI.sendControlChange(CCID[i], n, channel);
-      previous[i] = n;
-      printLCDmessCHAR("CC", 0, 1);
-      printLCDmessINT(n, 3, 1);
+    analog[i].update();
+    if (analog[i].hasChanged()) {
+      data[i] = analog[i].getValue()>>2;
+      if (data[i] > dataLag[i]+2 || data[i] < dataLag[i]-2) {
+        if(data[i] >= 115){
+          data[i] = 127;
+        }
+        if(data[i] <= 10){
+          data[i] = 0;
+        }
+        if (data[i] != dataLag[i]){
+          dataLag[i] = data[i];
+          usbMIDI.sendControlChange(CCID[i], data[i], channel);
+          printLCDmessCHAR("CC", 12, 1, false);
+          printLCDmessINT(data[i], 16, 1);
+          Serial.print("CC ");
+          Serial.println(data[i]);
+        }
+      }
     }
   }
 }
@@ -246,20 +346,19 @@ void midiControllerSliders(){
 void midiControllerPotBut(){
   for (int i=10;i<A_PINS;i++){
     // update the ResponsiveAnalogRead object every loop
-    int n = analogRead(ANALOG_PINS[i]);
-    if (n < (previous[i] - 1) || n > (previous[i] + 1)) {
-      usbMIDI.sendControlChange(CCID[i], n, channel);
-      printLCDmessCHAR("CC", 0, 1);
-      printLCDmessINT(n, 3, 1);
-      previous[i] = n;
+    analog[i].update();
+    if (analog[i].hasChanged()) {
+      data[i] = analog[i].getValue()>>2;
+      if (data[i] >= dataLag[i] || data[i] <= dataLag[i]){
+        dataLag[i] = data[i];
+        usbMIDI.sendControlChange(CCID[i], data[i], channel);
+        printLCDmessCHAR("CC", 12, 1, false);
+        printLCDmessINT(data[i], 16, 1);
+        Serial.print("CC ");
+        Serial.println(data[i]);
+      }
     }
   }
-}
-
-//***************** SAMPLE EFFECT PLAYER ****************
-void sampleeffectplayer(){
-  sound0.play(SAMPLENAMES[sample]);
-  printLCDmessCHAR(SAMPLEMAP[sample], 0, 0);
 }
 
 //***************** SAMPLE PLAYER SECTION ***************
@@ -269,37 +368,31 @@ void sampleplayer(){
     if (digital[i].fallingEdge()) {
       switch (i) {
         case 0:
-          sound2.play(SAMPLENAMES[i]);
-          printLCDmessCHAR(SAMPLEMAP[i], 0, 0);
+          playSdWav1.play(SAMPLE_X[SLOTS[i][0]][SLOTS[i][1]]);
           break;
 
         case 1:
-          sound1.play(SAMPLENAMES[i]);
-          printLCDmessCHAR(SAMPLEMAP[i], 0, 0);
+          playSdWav2.play(SAMPLE_X[SLOTS[i][0]][SLOTS[i][1]]);
           break;
 
         case 2:
-          sampleeffectplayer();
+          playSdWav3.play(SAMPLE_X[SLOTS[i][0]][SLOTS[i][1]]);
           break;
 
         case 3:
-          sound3.play(SAMPLENAMES[i]);
-          printLCDmessCHAR(SAMPLEMAP[i], 0, 0);
+          playSdWav4.play(SAMPLE_X[SLOTS[i][0]][SLOTS[i][1]]);
           break;
 
         case 4:
-          sound4.play(SAMPLENAMES[i]);
-          printLCDmessCHAR(SAMPLEMAP[i], 0, 0);
+          playSdWav5.play(SAMPLE_X[SLOTS[i][0]][SLOTS[i][1]]);
           break;
 
         case 5:
-          sound5.play(SAMPLENAMES[i]);
-          printLCDmessCHAR(SAMPLEMAP[i], 0, 0);
+          playSdWav6.play(SAMPLE_X[SLOTS[i][0]][SLOTS[i][1]]);
           break;
 
         case 6:
-          sound6.play(SAMPLENAMES[i]);
-          printLCDmessCHAR(SAMPLEMAP[i], 0, 0);
+          playSdWav7.play(SAMPLE_X[SLOTS[i][0]][SLOTS[i][1]]);
           break;
 
       }
@@ -309,19 +402,59 @@ void sampleplayer(){
 
 //*****************ENCODER SECTION***************
 void getEncoderData(){
+  int maxx = 0;
   long newRightF, newRightS;
   newRightF = knobRightF.read()/2;
   newRightS = knobRightS.read()/2;
   if (newRightF != positionRightF) {
-    if (newRightF < 11 && newRightF >= 0){
-      encsample = newRightF;
-      printLCDmessCHAR(SAMPLEMAP[encsample], 0, 1);
+    switch(state){
+      case 0:
+        if(newRightF > NBTYPE - 1){
+          knobRightF.write(0);
+          newRightF = 0;
+        }
+        if(newRightF < 0){
+          knobRightF.write(NBTYPE - 1);
+          newRightF = NBTYPE - 1;
+        }
+        enctype = newRightF;
+        printLCDmessCHAR(SAMPLE_TYPE[enctype], 0, 1, true);
+        break;
+
+      case 1:
+        for(int i = 0; i<NBX; i++){
+          if(SAMPLE_X[type][i][0] == 0){
+            maxx = i - 1;
+            break;
+          }
+        }
+        if(SAMPLE_X[type][newRightF][0] == 0){
+          knobRightF.write(0);
+          newRightF = 0;
+        }
+        if(newRightF < 0){
+          newRightF = maxx;
+          knobRightF.write(maxx);
+        }
+        encx = newRightF;
+        printLCDmessCHAR(SAMPLE_X[type][encx], 0, 1, true);
+        break;
     }
     positionRightF = newRightF;
-  }if (newRightS != positionRightS){
-    if (newRightS < 7 && newRightS >= 0){
-      enceffect = newRightS;
-      printLCDmessCHAR(EFFECTS[enceffect], 0, 1);
+  }
+  if (newRightS != positionRightS){
+    if (newRightS > NBSLOT - 1){
+      knobRightS.write(0);
+      newRightS = 0;
+    }
+    if (newRightS < 0){
+      newRightS = NBSLOT-1;
+      knobRightS.write(newRightS);
+    }
+    if (newRightS < NBSLOT){
+      encslot = newRightS;
+      printLCDmessCHAR("SLOT ", 0, 0, true);
+      printLCDmessINT(encslot, 6, 0);
     }
     positionRightS = newRightS;
   }
@@ -331,11 +464,32 @@ void selectSample(){
   digital[7].update();
   digital[8].update();
   if (digital[7].fallingEdge()) {
-      sample = encsample;
-      printLCDmessCHAR("OK SAMPLE", 0, 1); //SAMPLEMAP[sample]
+      switch(state){
+        case 0:
+          type = enctype;
+          printLCDmessCHAR(SAMPLE_X[type][0], 0, 1, true);
+          knobRightF.write(0);
+          msec2 = 0;
+          state = 1;
+          break;
+        
+        case 1:
+          if(msec2 <= 500){
+            printLCDmessCHAR(SAMPLE_TYPE[type], 0, 1, true);
+            knobRightF.write(type);
+            state = 0;
+          }else{
+            x = encx;
+            SLOTS[slot][0] = type;
+            SLOTS[slot][1] = x;
+            state = 1;
+          }
+          msec2 = 0;
+          break;
+      }
   }
   if (digital[8].fallingEdge()) {
-      effect = enceffect;
-      printLCDmessCHAR("OK EFFECT", 0, 1); //EFFECTS[effect]
+      slot = encslot;
+      printLCDmessCHAR("SLOT SET !", 0, 0, true);
   }
 }
