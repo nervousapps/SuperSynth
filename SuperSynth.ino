@@ -39,7 +39,7 @@ AudioPlaySdWav           playSdWav1;     //xy=228,200
 AudioPlaySdWav           playSdWav3;     //xy=233,333
 AudioPlaySdWav           playSdWav2;     //xy=248,267
 //AudioInputAnalog         adc1;           //xy=256,98
-AudioEffectReverb        reverb1;        //xy=411,100
+//AudioEffectReverb        reverb1;        //xy=411,100
 AudioMixer4              mix1;         //xy=505,293
 AudioMixer4              mix2;         //xy=512,420
 AudioMixer4              mix3;         //xy=694,351
@@ -54,7 +54,7 @@ AudioConnection          patchCord5(playSdWav1, 0, mix1, 1);
 AudioConnection          patchCord6(playSdWav3, 0, mix1, 3);
 AudioConnection          patchCord7(playSdWav2, 0, mix1, 2);
 //AudioConnection          patchCord8(adc1, reverb1);
-AudioConnection          patchCord9(reverb1, 0, mix1, 0);
+//AudioConnection          patchCord9(reverb1, 0, mix1, 0);
 AudioConnection          patchCord10(mix1, 0, mix3, 0);
 AudioConnection          patchCord11(mix2, 0, mix3, 1);
 AudioConnection          patchCord12(mix3, 0, dacs1, 0);
@@ -137,9 +137,9 @@ long positionRightF = -999;
 long positionRightS = -999;
 
 const int NBTYPE = 4;
-const int NBX = 150;
+const int NBX = 1000;
 const int NBSLOT = 7;
-char SAMPLE_TYPE[NBTYPE][20] = {"ALL","909","707","LINN"};
+char SAMPLE_TYPE[NBTYPE][20] = {"ALL","909","707","LINN"}; //,"VOCALS"};
 char SAMPLE_X[NBTYPE][NBX][40];
 int SLOTS[NBSLOT][2] = {{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0}};
 int type = 0;
@@ -184,6 +184,8 @@ void setup() {
   mix2.gain(1, 1);
   mix2.gain(2, 1);
   mix2.gain(3, 1);
+  mix3.gain(0, 2);
+  mix3.gain(1, 2);
 
   Serial.println("Initializing SD card...");
 
@@ -208,6 +210,7 @@ void setup() {
 
 //************LOOP**************
 void loop() {
+  //sendMidiNote();
   switch(turn){
     case 0:
       if (msec >= 50) {
@@ -361,6 +364,24 @@ void midiControllerPotBut(){
   }
 }
 
+
+//***************** SEND MIDI NOTE ***************
+void sendMidiNote(){
+  usbMIDI.sendNoteOn(60, 99, channel);  // 60 = C4
+  printLCDmessCHAR("C4",9,0,true);
+  delay(500);
+  usbMIDI.sendNoteOn(61, 99, channel);  // 61 = C#4
+  usbMIDI.sendNoteOff(60, 0, channel);  // 60 = C4
+  printLCDmessCHAR("C#4",9,0,true);
+  delay(500);
+  usbMIDI.sendNoteOn(62, 99, channel);  // 62 = D4
+  usbMIDI.sendNoteOff(61, 0, channel);  // 61 = C#4
+  printLCDmessCHAR("D4",9,0,true);
+  delay(500);
+  usbMIDI.sendNoteOff(62, 0, channel);  // 62 = D4
+  
+}
+
 //***************** SAMPLE PLAYER SECTION ***************
 void sampleplayer(){
   for (int i=0;i<D_PINS-2;i++){
@@ -400,6 +421,24 @@ void sampleplayer(){
   }
 }
 
+
+//*****************909 SECTION***************
+void sample909(){
+  
+}
+
+
+//*****************707 SECTION***************
+void sample707(){
+  
+}
+
+
+//*****************LINN SECTION***************
+void sampleLINN(){
+  
+}
+
 //*****************ENCODER SECTION***************
 void getEncoderData(){
   int maxx = 0;
@@ -409,35 +448,36 @@ void getEncoderData(){
   if (newRightF != positionRightF) {
     switch(state){
       case 0:
-        if(newRightF > NBTYPE - 1){
-          knobRightF.write(0);
-          newRightF = 0;
-        }
-        if(newRightF < 0){
-          knobRightF.write(NBTYPE+2);
-          newRightF = NBTYPE+2;
-        }
         enctype = newRightF;
+        if(enctype > NBTYPE - 1){
+          knobRightF.write(0);
+          enctype = 0;
+        }
+        if(enctype < 0){
+          knobRightF.write((NBTYPE-1)*2);
+          enctype = NBTYPE-1;
+        }
         printLCDmessCHAR(SAMPLE_TYPE[enctype], 0, 1, true);
         break;
 
       case 1:
+        encx = newRightF;
         for(int i = 0; i<NBX; i++){
           if(SAMPLE_X[type][i][0] == 0){
             maxx = i;
             break;
           }
         }
-        if(SAMPLE_X[type][newRightF][0] == 0){
+        if(encx < 0){
+          knobRightF.write(maxx*2);
+          encx = maxx;
+        }
+        if(encx > maxx){
           knobRightF.write(0);
-          newRightF = 0;
+          encx = 0;
         }
-        if(newRightF < 0){
-          newRightF = maxx;
-          knobRightF.write(maxx);
-        }
-        encx = newRightF;
         printLCDmessCHAR(SAMPLE_X[type][encx], 0, 1, true);
+        printLCDmessINT(encx, 0, 0);
         break;
     }
     positionRightF = newRightF;
@@ -476,7 +516,8 @@ void selectSample(){
         case 1:
           if(msec2 <= 500){
             printLCDmessCHAR(SAMPLE_TYPE[type], 0, 1, true);
-            knobRightF.write(type);
+            knobRightF.write(type*2);
+            enctype = type;
             state = 0;
           }else{
             x = encx;
