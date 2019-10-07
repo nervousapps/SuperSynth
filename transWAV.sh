@@ -1,5 +1,5 @@
 #!/bin/bash
-FILES=~/SOUNDS/SDSUPERSYNTH/*
+FILES=~/SOUNDS/SDSUPERSYNTH/new/*
 for f in $FILES
 do
   filename_ext=$(basename -- "$f")

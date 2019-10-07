@@ -8,7 +8,7 @@
 //  - slide7 = A6 CC         - pot7 = A14 CC                       - int2pos3 =  // CCDOWN            - input5 = 30
 //  - slide8 = A7 CC         - enc1 = 6,7 SELECT                   - int3pos1 = A17 CCUP              - input6 = 24
 //  - slide9 = A8 CC         - enc2 = 8,9 SELECT                   - int3pos2 =  // CCNOT             - input7 = 25
-//  - slide10 = A9 CC        - enbut1 = 38 SELECT                  - int3pos3 =  // CCDOWN            - input8 = 26
+//  - slide10 = A9 CC        - enbut1 = 37 SELECT                  - int3pos3 =  // CCDOWN            - input8 = 26
 
 
 //************LIBRARIES USED**************
@@ -38,6 +38,7 @@ AudioPlaySdWav           playSdWav7;     //xy=219,562
 AudioPlaySdWav           playSdWav1;     //xy=228,200
 AudioPlaySdWav           playSdWav3;     //xy=233,333
 AudioPlaySdWav           playSdWav2;     //xy=248,267
+//AudioSynthNoisePink      pink1;
 //AudioInputAnalog         adc1;           //xy=256,98
 //AudioEffectReverb        reverb1;        //xy=411,100
 AudioMixer4              mix1;         //xy=505,293
@@ -50,14 +51,14 @@ AudioConnection          patchCord1(playSdWav4, 0, mix2, 0);
 AudioConnection          patchCord2(playSdWav5, 0, mix2, 1);
 AudioConnection          patchCord3(playSdWav6, 0, mix2, 2);
 AudioConnection          patchCord4(playSdWav7, 0, mix2, 3);
-AudioConnection          patchCord5(playSdWav1, 0, mix1, 1);
+//AudioConnection          patchCord5(playSdWav1, 0, mix1, 1);
 AudioConnection          patchCord6(playSdWav3, 0, mix1, 3);
 AudioConnection          patchCord7(playSdWav2, 0, mix1, 2);
 //AudioConnection          patchCord8(adc1, reverb1);
 //AudioConnection          patchCord9(reverb1, 0, mix1, 0);
 AudioConnection          patchCord10(mix1, 0, mix3, 0);
 AudioConnection          patchCord11(mix2, 0, mix3, 1);
-AudioConnection          patchCord12(mix3, 0, dacs1, 0);
+AudioConnection          patchCord12(playSdWav1, 0, dacs1, 0);
 AudioConnection          patchCord13(mix3, 0, dacs1, 1);
 
 
@@ -136,12 +137,14 @@ Encoder knobRightS(8, 9);
 long positionRightF = -999;
 long positionRightS = -999;
 
-const int NBTYPE = 4;
-const int NBX = 1000;
+const int NBTYPE = 8;
+const int NBX = 330;
 const int NBSLOT = 7;
-char SAMPLE_TYPE[NBTYPE][20] = {"ALL","909","707","LINN"}; //,"VOCALS"};
+char SAMPLE_TYPE[NBTYPE][20] = {"ALL","909", "808", "707","LINN", "DARBUKA","VOCALS", "PIANO"};
 char SAMPLE_X[NBTYPE][NBX][40];
 int SLOTS[NBSLOT][2] = {{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0}};
+int SAVED_SLOTS_1[NBSLOT][2] = {{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0}};
+int SAVED_SLOTS_2[NBSLOT][2] = {{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0}};
 int type = 0;
 int enctype = 0;
 int x = 0;
